@@ -1,1 +1,1 @@
-from gspreadhelper.gspread import *
+from gspreadhelper.helper import *
