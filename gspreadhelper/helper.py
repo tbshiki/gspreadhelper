@@ -1,20 +1,8 @@
-##
-# gspread_update_cells(ワークシート変数, リスト変数, 開始セル)
-#
-##
 import gspread
-
-# from oauth2client.service_account import ServiceAccountCredentials
 
 import pandas as pd
-import gspread
 import re
 import sys
-from datetime import datetime, timedelta
-
-# モジュールのあるパスを追加
-sys.path.append("../module")
-# 数字とアルファベットを変換
 
 # import convert_alphabet_to_num
 def a2num(alpha):
@@ -66,7 +54,7 @@ def free(worksheet, list, startcell):
     start_cell_row = int(re.sub(r"[\D]", "", start_cell))
 
     # 展開を開始するセルからA1セルの差分
-    col_diff = convert_alphabet_to_num.A2num(start_cell_col) - convert_alphabet_to_num.A2num("A")
+    col_diff = A2num(start_cell_col) - A2num("A")
     row_diff = start_cell_row - 1
 
     # 最大列が足りない場合は追加
@@ -100,9 +88,6 @@ def just(worksheet, list, startcell, lastcell):
 def get(path, SPREADSHEET_KEY, sheet=1):
 
     try:
-        # scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
-        # credentials = ServiceAccountCredentials.from_json_keyfile_name(path, scope)
-        # gc = gspread.authorize(credentials)
         gc = gspread.service_account(filename=path)
         workbook = gc.open_by_key(SPREADSHEET_KEY)
     except:
@@ -122,9 +107,6 @@ def get(path, SPREADSHEET_KEY, sheet=1):
 def get_book(path, SPREADSHEET_KEY):
 
     try:
-        # scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
-        # credentials = ServiceAccountCredentials.from_json_keyfile_name(path, scope)
-        # gc = gspread.authorize(credentials)
         gc = gspread.service_account(filename=path)
         workbook = gc.open_by_key(SPREADSHEET_KEY)
     except:
