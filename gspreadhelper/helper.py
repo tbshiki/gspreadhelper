@@ -66,7 +66,7 @@ def free(worksheet, list, startcell):
         worksheet.add_rows((row_lastnum + row_diff) - worksheet.row_count)
 
     # DataFrameのヘッダーと中身をスプレッドシートの任意のセルから展開する
-    cell_list = worksheet.range(start_cell + ":" + convert_num_to_alphabet.num2A(col_lastnum + col_diff) + str(row_lastnum + row_diff))
+    cell_list = worksheet.range(start_cell + ":" + num2A(col_lastnum + col_diff) + str(row_lastnum + row_diff))
     for cell in cell_list:
         val = df.iloc[cell.row - row_diff - 1][cell.col - col_diff - 1]
         cell.value = val
