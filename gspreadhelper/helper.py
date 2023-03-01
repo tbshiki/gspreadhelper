@@ -102,7 +102,7 @@ def get(path, SPREADSHEET_KEY, sheet=1):
     return workbook, worksheet
 
 
-# ワークシートとワークブックを指定して取得 sheetの引数いれなければ一番左のシートが返る
+# ワークブックのみを取得
 # workbook = gspread_me.get_book(path, SPREADSHEET_KEY)
 def get_book(path, SPREADSHEET_KEY):
 
