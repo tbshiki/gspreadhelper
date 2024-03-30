@@ -4,6 +4,7 @@ import pandas as pd
 import re
 import sys
 
+
 # import convert_alphabet_to_num
 def a2num(alpha):
     num = 0
@@ -43,9 +44,19 @@ def num2A(num):
 # https://tanuhack.com/gspread-dataframe/
 # 指定セルから連想配列を貼り付け
 # gspread_me.free(worksheet, list, startcell)
-def free(worksheet, list, startcell):
+def free(worksheet, lst, startcell):
+    """DataFrameをスプレッドシートに貼り付ける
 
-    df = pd.DataFrame(list)
+    Args:
+        worksheet (obj): スプレッドシートのワークシート
+        lst (list): 連想配列
+        startcell (str): 貼り付けを開始するセル
+
+    Returns:
+        None
+    """
+
+    df = pd.DataFrame(lst)
     col_lastnum = len(df.columns)  # DataFrameの列数
     row_lastnum = len(df.index)  # DataFrameの行数
 
@@ -66,7 +77,9 @@ def free(worksheet, list, startcell):
         worksheet.add_rows((row_lastnum + row_diff) - worksheet.row_count)
 
     # DataFrameのヘッダーと中身をスプレッドシートの任意のセルから展開する
-    cell_list = worksheet.range(start_cell + ":" + num2A(col_lastnum + col_diff) + str(row_lastnum + row_diff))
+    cell_list = worksheet.range(
+        start_cell + ":" + num2A(col_lastnum + col_diff) + str(row_lastnum + row_diff)
+    )
     for cell in cell_list:
         val = df.iloc[cell.row - row_diff - 1][cell.col - col_diff - 1]
         cell.value = val
@@ -84,7 +97,7 @@ def just(worksheet, list, startcell, lastcell):
 
 
 # ワークシートとワークブックを指定して取得 sheetの引数いれなければ一番左のシートが返る
-# workbook, worksheet = gspread_me.get(path, SPREADSHEET_KEY, sheet)
+# workbook, worksheet = gspreadhelper.get(path, SPREADSHEET_KEY, sheet)
 def get(path, SPREADSHEET_KEY, sheet=1):
 
     try:
@@ -95,7 +108,9 @@ def get(path, SPREADSHEET_KEY, sheet=1):
         sys.exit()
 
     if type(sheet) is int:
-        worksheet = workbook.get_worksheet(sheet - 1)  # ワークシートのインデックスは0から始まる
+        worksheet = workbook.get_worksheet(
+            sheet - 1
+        )  # ワークシートのインデックスは0から始まる
     else:
         worksheet = workbook.worksheet(sheet)
 
@@ -103,7 +118,7 @@ def get(path, SPREADSHEET_KEY, sheet=1):
 
 
 # ワークブックのみを取得
-# workbook = gspread_me.get_book(path, SPREADSHEET_KEY)
+# workbook = gspreadhelper.get_book(path, SPREADSHEET_KEY)
 def get_book(path, SPREADSHEET_KEY):
 
     try:
