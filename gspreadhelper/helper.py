@@ -1,6 +1,5 @@
 import gspread
 
-import pandas as pd
 import re
 import sys
 
@@ -56,9 +55,8 @@ def free(worksheet, lst, startcell):
         None
     """
 
-    df = pd.DataFrame(lst)
-    col_lastnum = len(df.columns)  # DataFrameの列数
-    row_lastnum = len(df.index)  # DataFrameの行数
+    col_lastnum = len(lst[0])  # 最初の行（ヘッダー）の長さが列数
+    row_lastnum = len(lst)  # valuesリストの長さが行数
 
     start_cell = startcell  # 列はA〜Z列限定
     start_cell_col = re.sub(r"[\d]", "", start_cell)
