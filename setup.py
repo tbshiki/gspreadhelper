@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 NAME = "gspreadhelper"
-VERSION = "0.1.3"
+VERSION = "0.1.4"
 
 AUTHOR = "tbshiki"
 AUTHOR_EMAIL = "info@tbshiki.com"

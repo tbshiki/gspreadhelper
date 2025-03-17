@@ -1,86 +1,68 @@
 import gspread
-
 import re
-import sys
 
 
-# import convert_alphabet_to_num
-def a2num(alpha):
+def A2num(col):
+    """アルファベット列を数値に変換 (A=1, B=2, ..., Z=26, AA=27...)"""
     num = 0
-    for index, item in enumerate(list(alpha)):
-        num += pow(26, len(alpha) - index - 1) * (ord(item) - ord("a") + 1)
+    for c in col:
+        num = num * 26 + (ord(c.upper()) - ord("A") + 1)
     return num
 
 
-# 大文字
-def A2num(alpha):
-    num = 0
-    for index, item in enumerate(list(alpha)):
-        num += pow(26, len(alpha) - index - 1) * (ord(item) - ord("A") + 1)
-    return num
-
-
-# import convert_num_to_alphabet
-def num2a(num):
-    if num <= 26:
-        return chr(96 + num)
-    elif num % 26 == 0:
-        return num2a(num // 26 - 1) + chr(122)
-    else:
-        return num2a(num // 26) + chr(96 + num % 26)
-
-
-# 大文字
 def num2A(num):
-    if num <= 26:
-        return chr(64 + num)
-    elif num % 26 == 0:
-        return num2A(num // 26 - 1) + chr(90)
-    else:
-        return num2A(num // 26) + chr(64 + num % 26)
+    """数値をアルファベット列に変換 (1=A, 2=B, ..., 26=Z, 27=AA...)"""
+    col = ""
+    while num > 0:
+        num -= 1
+        col = chr(num % 26 + ord("A")) + col
+        num //= 26
+    return col
 
 
-# https://tanuhack.com/gspread-dataframe/
-# 指定セルから連想配列を貼り付け
-# gspread_me.free(worksheet, list, startcell)
 def free(worksheet, lst, startcell):
-    """DataFrameをスプレッドシートに貼り付ける
+    """リストをスプレッドシートに貼り付ける
 
     Args:
         worksheet (obj): スプレッドシートのワークシート
-        lst (list): 連想配列
-        startcell (str): 貼り付けを開始するセル
+        lst (list): 2次元リスト (行ごとのデータ)
+        startcell (str): 貼り付け開始セル (例: "B2")
 
-    Returns:
-        None
+    Usage:
+        gspread_me.free(worksheet, lst, "B2")
     """
 
-    col_lastnum = len(lst[0])  # 最初の行（ヘッダー）の長さが列数
-    row_lastnum = len(lst)  # valuesリストの長さが行数
+    if not lst or not isinstance(lst, list) or not isinstance(lst[0], list):
+        raise ValueError("lstは2次元リストである必要があります")
 
-    start_cell = startcell  # 列はA〜Z列限定
-    start_cell_col = re.sub(r"[\d]", "", start_cell)
-    start_cell_row = int(re.sub(r"[\D]", "", start_cell))
+    col_lastnum = len(lst[0])  # 列数
+    row_lastnum = len(lst)  # 行数
 
-    # 展開を開始するセルからA1セルの差分
+    # 開始セルの列と行を取得
+    start_cell_col = re.sub(r"\d", "", startcell).upper()
+    start_cell_row = int(re.sub(r"\D", "", startcell))
+
+    # A1との差分
     col_diff = A2num(start_cell_col) - A2num("A")
     row_diff = start_cell_row - 1
 
-    # 最大列が足りない場合は追加
+    # 列・行の拡張
     if worksheet.col_count < (col_lastnum + col_diff):
         worksheet.add_cols((col_lastnum + col_diff) - worksheet.col_count)
-
-    # 最大行が足りない場合は追加
     if worksheet.row_count < (row_lastnum + row_diff):
         worksheet.add_rows((row_lastnum + row_diff) - worksheet.row_count)
 
-    # DataFrameのヘッダーと中身をスプレッドシートの任意のセルから展開する
-    cell_list = worksheet.range(
-        start_cell + ":" + num2A(col_lastnum + col_diff) + str(row_lastnum + row_diff)
-    )
-    for cell in cell_list:
-        val = df.iloc[cell.row - row_diff - 1][cell.col - col_diff - 1]
-        cell.value = val
+    # 範囲取得
+    end_col = num2A(col_lastnum + col_diff)
+    end_row = start_cell_row + row_lastnum - 1
+    cell_list = worksheet.range(f"{startcell}:{end_col}{end_row}")
+
+    # 値を適用
+    for i, row in enumerate(lst):
+        for j, val in enumerate(row):
+            idx = i * col_lastnum + j
+            cell_list[idx].value = val
+
     worksheet.update_cells(cell_list)
 
 
@@ -94,46 +76,82 @@ def just(worksheet, list, startcell, lastcell):
     worksheet.update_cells(cell_list)
 
 
-# ワークシートとワークブックを指定して取得 sheetの引数いれなければ一番左のシートが返る
-# workbook, worksheet = gspreadhelper.get(path, SPREADSHEET_KEY, sheet)
-def get(path, SPREADSHEET_KEY, sheet=1):
-
-    try:
-        gc = gspread.service_account(filename=path)
-        workbook = gc.open_by_key(SPREADSHEET_KEY)
-    except:
-        print("スプレッドシートが見つかりません")
-        sys.exit()
-
-    if type(sheet) is int:
-        worksheet = workbook.get_worksheet(
-            sheet - 1
-        )  # ワークシートのインデックスは0から始まる
-    else:
-        worksheet = workbook.worksheet(sheet)
-
-    return workbook, worksheet
-
-
-# ワークブックのみを取得
-# workbook = gspreadhelper.get_book(path, SPREADSHEET_KEY)
-def get_book(path, SPREADSHEET_KEY):
-
-    try:
-        gc = gspread.service_account(filename=path)
-        workbook = gc.open_by_key(SPREADSHEET_KEY)
-    except:
-        print("スプレッドシートが見つかりません")
-        sys.exit()
-
-    return workbook
-
-
-# ワークシートとワークブックを指定して取得 sheetの引数いれなければ一番左のシートが返る
-# list_all, last_row, last_col = gspread_me.get_all(worksheet)
-def get_all(worksheet):
+def get_all_cells(worksheet):
+    """
+    Usage:
+    ワークシートの全データを取得する
+    list_all, last_col, last_row = gspreadhelper.get_all(worksheet)
+    """
     list_all = worksheet.get_all_values()
     last_col = max([len(value) for value in list_all])
     last_row = len(list_all)
 
     return list_all, last_col, last_row
+
+
+import gspread
+
+
+def get_spreadsheet(SERVICE_ACCOUNT_KEY_PATH, SPREADSHEET_KEY):
+    """
+    Googleスプレッドシートを取得する
+
+    Args:
+        SERVICE_ACCOUNT_KEY_PATH (str): 認証用JSONのパス
+        SPREADSHEET_KEY (str): スプレッドシートのキー
+
+    Returns:
+        workbook (gspread.models.Spreadsheet): スプレッドシートオブジェクト
+
+    Usage:
+        spreadsheet = get_spreadsheet(path, SPREADSHEET_KEY)
+    """
+    if not SERVICE_ACCOUNT_KEY_PATH:
+        print("環境変数 'SERVICE_ACCOUNT_KEY_PATH' が設定されていません")
+        return None
+
+    if not SPREADSHEET_KEY:
+        print("環境変数 'SPREADSHEET_KEY' が設定されていません")
+        return None
+
+    try:
+        gc = gspread.service_account(filename=SERVICE_ACCOUNT_KEY_PATH)
+        spreadsheet = gc.open_by_key(SPREADSHEET_KEY)
+        return spreadsheet
+    except Exception as e:
+        print(f"スプレッドシートが見つかりません: {str(e)}")
+        return None
+
+
+def get_worksheet_by_index(SERVICE_ACCOUNT_KEY_PATH, SPREADSHEET_KEY, sheet_index=0):
+    """
+    Googleスプレッドシートからシートをインデックスで取得する
+
+    Args:
+        SERVICE_ACCOUNT_KEY_PATH (str): 認証用JSONのパス
+        SPREADSHEET_KEY (str): スプレッドシートのキー
+        sheet_index (int): 取得するシートのインデックス（0始まり）
+
+    Returns:
+        workbook (gspread.models.Spreadsheet): スプレッドシートオブジェクト
+        worksheet (gspread.models.Worksheet or None): ワークシートオブジェクト
+
+    Usage:
+        spreadsheet, worksheet = get_worksheet_by_index(path, SPREADSHEET_KEY, sheet_index)
+    """
+    spreadsheet = get_spreadsheet(SERVICE_ACCOUNT_KEY_PATH, SPREADSHEET_KEY)  # スプレッドシートの取得
+
+    if not spreadsheet:
+        print("スプレッドシートが取得できません")
+        return None, None
+
+    worksheets = spreadsheet.worksheets()  # 全シート取得
+    if not worksheets:
+        print("スプレッドシートにシートがありません")
+        return spreadsheet, None
+
+    # sheet_index が範囲外なら 0 にする
+    sheet_index = max(0, min(sheet_index, len(worksheets) - 1))
+
+    worksheet = worksheets[sheet_index]  # 指定したインデックスのシートを取得
+    return spreadsheet, worksheet
