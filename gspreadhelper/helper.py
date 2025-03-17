@@ -1,5 +1,6 @@
 import gspread
 from gspread.utils import a1_to_rowcol, rowcol_to_a1
+import time
 import re
 
 
@@ -65,7 +66,6 @@ def paste_free(worksheet, lst, startcell):
 
 
 # 指定セル範囲へ配列を貼り付け
-# gspread_me.just(worksheet, list, startcell, lastcell)
 def paste_just(worksheet, list, startcell, lastcell):
     cell_list = worksheet.range(startcell + ":" + lastcell)
 
@@ -87,9 +87,6 @@ def get_all_cells(worksheet, time=1):
     last_row = len(list_all)
 
     return list_all, last_col, last_row
-
-
-import gspread
 
 
 def get_spreadsheet(SERVICE_ACCOUNT_KEY_PATH, SPREADSHEET_KEY, time=1):
