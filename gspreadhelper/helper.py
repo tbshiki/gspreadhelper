@@ -1,5 +1,5 @@
 import gspread
-from gspread.utils import A1_to_rowcol, rowcol_to_a1
+from gspread.utils import a1_to_rowcol, rowcol_to_a1
 import re
 
 
@@ -43,7 +43,7 @@ def paste_free(worksheet, lst, startcell):
     row_lastnum = len(lst)  # 行数
 
     # 開始セルの列と行を取得
-    start_row, start_col = A1_to_rowcol(startcell)
+    start_row, start_col = a1_to_rowcol(startcell)
 
     # 列・行の拡張
     if worksheet.col_count < (col_lastnum + start_col - 1):
