@@ -1,4 +1,5 @@
 import gspread
+from gspread.utils import A1_to_rowcol, rowcol_to_a1
 import re
 
 
@@ -20,42 +21,39 @@ def num2A(num):
     return col
 
 
-def free(worksheet, lst, startcell):
-    """リストをスプレッドシートに貼り付ける
+def paste_free(worksheet, lst, startcell):
+    """
+    リストをスプレッドシートに貼り付ける。
+
+    1次元リストの場合は横方向、2次元リストの場合はそのまま貼り付け。
 
     Args:
         worksheet (obj): スプレッドシートのワークシート
-        lst (list): 2次元リスト (行ごとのデータ)
+        lst (list): 1次元または2次元リスト
         startcell (str): 貼り付け開始セル (例: "B2")
-
-    Usage:
-        gspread_me.free(worksheet, lst, "B2")
     """
+    if not lst or not isinstance(lst, list):
+        raise ValueError("lstはリストである必要があります")
 
-    if not lst or not isinstance(lst, list) or not isinstance(lst[0], list):
-        raise ValueError("lstは2次元リストである必要があります")
+    # 1次元リストの場合、横方向の2次元リストに変換
+    if all(not isinstance(row, list) for row in lst):
+        lst = [lst]
 
     col_lastnum = len(lst[0])  # 列数
     row_lastnum = len(lst)  # 行数
 
     # 開始セルの列と行を取得
-    start_cell_col = re.sub(r"\d", "", startcell).upper()
-    start_cell_row = int(re.sub(r"\D", "", startcell))
-
-    # A1との差分
-    col_diff = A2num(start_cell_col) - A2num("A")
-    row_diff = start_cell_row - 1
+    start_row, start_col = A1_to_rowcol(startcell)
 
     # 列・行の拡張
-    if worksheet.col_count < (col_lastnum + col_diff):
-        worksheet.add_cols((col_lastnum + col_diff) - worksheet.col_count)
-    if worksheet.row_count < (row_lastnum + row_diff):
-        worksheet.add_rows((row_lastnum + row_diff) - worksheet.row_count)
+    if worksheet.col_count < (col_lastnum + start_col - 1):
+        worksheet.add_cols((col_lastnum + start_col - 1) - worksheet.col_count)
+    if worksheet.row_count < (row_lastnum + start_row - 1):
+        worksheet.add_rows((row_lastnum + start_row - 1) - worksheet.row_count)
 
     # 範囲取得
-    end_col = num2A(col_lastnum + col_diff)
-    end_row = start_cell_row + row_lastnum - 1
-    cell_list = worksheet.range(f"{startcell}:{end_col}{end_row}")
+    end_cell = rowcol_to_a1(start_row + row_lastnum - 1, start_col + col_lastnum - 1)
+    cell_list = worksheet.range(f"{startcell}:{end_cell}")
 
     # 値を適用
     for i, row in enumerate(lst):
@@ -68,7 +66,7 @@ def free(worksheet, lst, startcell):
 
 # 指定セル範囲へ配列を貼り付け
 # gspread_me.just(worksheet, list, startcell, lastcell)
-def just(worksheet, list, startcell, lastcell):
+def paste_just(worksheet, list, startcell, lastcell):
     cell_list = worksheet.range(startcell + ":" + lastcell)
 
     for cell, item in zip(cell_list, list):
@@ -76,13 +74,15 @@ def just(worksheet, list, startcell, lastcell):
     worksheet.update_cells(cell_list)
 
 
-def get_all_cells(worksheet):
+def get_all_cells(worksheet, time=1):
     """
     Usage:
     ワークシートの全データを取得する
     list_all, last_col, last_row = gspreadhelper.get_all(worksheet)
     """
     list_all = worksheet.get_all_values()
+    time.sleep(time)
+
     last_col = max([len(value) for value in list_all])
     last_row = len(list_all)
 
@@ -92,7 +92,7 @@ def get_all_cells(worksheet):
 import gspread
 
 
-def get_spreadsheet(SERVICE_ACCOUNT_KEY_PATH, SPREADSHEET_KEY):
+def get_spreadsheet(SERVICE_ACCOUNT_KEY_PATH, SPREADSHEET_KEY, time=1):
     """
     Googleスプレッドシートを取得する
 
@@ -116,14 +116,19 @@ def get_spreadsheet(SERVICE_ACCOUNT_KEY_PATH, SPREADSHEET_KEY):
 
     try:
         gc = gspread.service_account(filename=SERVICE_ACCOUNT_KEY_PATH)
+        time.sleep(time)
+
         spreadsheet = gc.open_by_key(SPREADSHEET_KEY)
+        time.sleep(time)
+
         return spreadsheet
     except Exception as e:
         print(f"スプレッドシートが見つかりません: {str(e)}")
         return None
 
 
-def get_worksheet_by_index(SERVICE_ACCOUNT_KEY_PATH, SPREADSHEET_KEY, sheet_index=0):
+
+def get_worksheet_by_index(SERVICE_ACCOUNT_KEY_PATH, SPREADSHEET_KEY, sheet_index=0, time=1):
     """
     Googleスプレッドシートからシートをインデックスで取得する
 
@@ -139,13 +144,15 @@ def get_worksheet_by_index(SERVICE_ACCOUNT_KEY_PATH, SPREADSHEET_KEY, sheet_inde
     Usage:
         spreadsheet, worksheet = get_worksheet_by_index(path, SPREADSHEET_KEY, sheet_index)
     """
-    spreadsheet = get_spreadsheet(SERVICE_ACCOUNT_KEY_PATH, SPREADSHEET_KEY)  # スプレッドシートの取得
+    spreadsheet = get_spreadsheet(SERVICE_ACCOUNT_KEY_PATH, SPREADSHEET_KEY, time)  # スプレッドシートの取得
 
     if not spreadsheet:
         print("スプレッドシートが取得できません")
         return None, None
 
     worksheets = spreadsheet.worksheets()  # 全シート取得
+    time.sleep(time)
+
     if not worksheets:
         print("スプレッドシートにシートがありません")
         return spreadsheet, None
@@ -154,4 +161,6 @@ def get_worksheet_by_index(SERVICE_ACCOUNT_KEY_PATH, SPREADSHEET_KEY, sheet_inde
     sheet_index = max(0, min(sheet_index, len(worksheets) - 1))
 
     worksheet = worksheets[sheet_index]  # 指定したインデックスのシートを取得
+    time.sleep(time)
+
     return spreadsheet, worksheet
